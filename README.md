@@ -15,6 +15,7 @@ Currently supported file formats:
 The project also provides a web server for previewing the game's content. From this repository's directory, run:
 
 ```sh
+git submodule update --init --recursive
 dotnet build LaTaleTools.sln
 LaTaleBinaryPath="$PWD/../binary" dotnet run --project LaTaleTools.WebApp --launch-profile http
 ```
@@ -40,4 +41,4 @@ dotnet fsi scripts/SmokeTest.fsx ../binary
 dotnet fsi scripts/SmokeTest.fsx ../binary http://localhost:5126
 ```
 
-The smoke test reads samples without extracting or modifying them. HTTP checks use representative files from the supplied Chinese client set. Failures exit nonzero; missing TBL image references are reported separately because some are already missing in the samples. No game assets are needed for the unit tests.
+The smoke test reads samples without extracting or modifying them. HTTP checks use representative files from the supplied Chinese client set. Failures exit nonzero; missing TBL images and crops outside PNG bounds are reported separately because these inconsistencies already occur in the samples. No game assets are needed for the unit tests.

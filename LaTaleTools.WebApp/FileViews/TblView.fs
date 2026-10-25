@@ -13,10 +13,10 @@ let public tblView (groups: SpriteGroup list) (getImageBase64: Sprite -> string 
         tr [] [
             th [] [ str "TBL Group Name" ]
             th [] [ str "Image Path" ]
-            th [] [ str "Unknown" ]
-            th [] [ str "Unknown" ]
-            th [] [ str "Unknown" ]
-            th [] [ str "Pos TopLeft" ]
+            th [] [ str "Frame number" ]
+            th [] [ str "Drawing offset" ]
+            th [] [ str "Center offset" ]
+            th [] [ str "Atlas top-left" ]
             th [] [ str "Size" ]
             th [] [ str "Preview" ]
         ]
@@ -27,16 +27,16 @@ let public tblView (groups: SpriteGroup list) (getImageBase64: Sprite -> string 
 
             let preview =
                 match base64Img with
-                | None -> []
+                | None -> [ str "Image missing from loaded archives" ]
                 | Some base64Img ->
-                    [ img [ _src $"data:image/png;base64,{base64Img}" ] ]
+                    [ img [ _src $"data:image/png;base64,{base64Img}"; _alt $"Frame {sprite.FrameNumber}" ] ]
             return td [] preview
         }
         [
             td [] (pathView true ap ap String.Empty)
-            td [] [ str (sprite.Unknown1.ToString()) ]
-            td [] [ str (sprite.UnknownVec1.ToString()) ]
-            td [] [ str (sprite.UnknownVec2.ToString()) ]
+            td [] [ str (sprite.FrameNumber.ToString()) ]
+            td [] [ str (sprite.Offset.ToString()) ]
+            td [] [ str (sprite.CenterOffset.ToString()) ]
             td [] [ str (sprite.PosTopLeft.ToString()) ]
             td [] [ str ((sprite.PosBottomRight - sprite.PosTopLeft).ToString()) ]
             asyncNode spritePreview
@@ -47,7 +47,7 @@ let public tblView (groups: SpriteGroup list) (getImageBase64: Sprite -> string 
             td [
                 _rowspan ((max 1 group.Sprites.Length).ToString())
             ] [
-                str $"{group.Name} ({group.Sprites.Length})"
+                str $"{group.Name} ({group.Sprites.Length} stored, {group.TotalFrames} declared)"
             ]
         match rows with
         | head :: tail -> ((groupRow :: head) :: tail)
@@ -63,4 +63,8 @@ let public tblView (groups: SpriteGroup list) (getImageBase64: Sprite -> string 
         ]
 
     let rows = List.collect id sprites
-    [ table [ _border "1" ] (titleRow :: rows) ]
+    [
+        LaTaleTools.WebApp.FileViews.TblExplanation.view ()
+        hr []
+        table [ _border "1" ] (titleRow :: rows)
+    ]

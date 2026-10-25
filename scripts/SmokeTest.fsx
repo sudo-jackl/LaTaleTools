@@ -12,6 +12,7 @@ open System.Text.RegularExpressions
 open System.Buffers.Binary
 open LaTaleTools.Library
 open LaTaleTools.Library.Spf
+open LaTaleTools.Library.Util
 
 let check condition message = if not condition then failwith message
 let args = fsi.CommandLineArgs |> Array.skip 1
@@ -61,6 +62,25 @@ let readBytes path =
 
 let mutable tables, rows, tbls, groups, sprites = 0, 0, 0, 0, 0
 let mutable missingImages = Set.empty<ArchivePath>
+let imageSizes = System.Collections.Generic.Dictionary<ArchivePath, int * int>()
+let mutable outOfBoundsCrops = 0
+let imageSize path =
+    match imageSizes.TryGetValue path with
+    | true, size -> size
+    | _ ->
+        let archive, entry = files[path]
+        check (entry.ContentSize >= 24) $"Truncated PNG header: {path}"
+        use stream = File.OpenRead archive
+        stream.Position <- int64 entry.ContentPosition
+        let header = Array.zeroCreate<byte> 24
+        stream.ReadExactly header
+        check (header[0..7] = [|137uy; 80uy; 78uy; 71uy; 13uy; 10uy; 26uy; 10uy|])
+              $"Expected PNG image reference: {path}"
+        let size = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(16, 4)),
+                   BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(20, 4))
+        imageSizes.Add(path, size)
+        size
+
 for archive, entry in entries do
     let (ArchivePath path) = entry.Path
     match Path.GetExtension(path).ToUpperInvariant() with
@@ -85,8 +105,16 @@ for archive, entry in entries do
                   $"TBL records do not consume the whole entry: {path}"
             for group in parsed do
                 for sprite in group.Sprites do
+                    let (Vec2(left, top)), (Vec2(right, bottom)) = sprite.PosTopLeft, sprite.PosBottomRight
+                    let (Vec2(cx, cy)) = sprite.CenterOffset
+                    check (right > left && bottom > top && Single.IsFinite cx && Single.IsFinite cy)
+                          $"Invalid TBL rectangle or center offset: {path}, {group.Name}, {sprite.FrameNumber}"
                     if not (files.ContainsKey sprite.File) then
                         missingImages <- missingImages.Add sprite.File
+                    else
+                        let width, height = imageSize sprite.File
+                        if left < 0 || top < 0 || right > width || bottom > height then
+                            outOfBoundsCrops <- outOfBoundsCrops + 1
             tbls <- tbls + 1
             groups <- groups + parsed.Length
             sprites <- sprites + count)
@@ -95,6 +123,8 @@ for archive, entry in entries do
 printfn "PASS: %d archives, %d entries; %d LDTs / %d rows; %d TBLs / %d groups / %d sprites"
     archives.Length entries.Length tables rows tbls groups sprites
 printfn "INFO: %d distinct missing TBL image references (reported, not treated as parser failures)" missingImages.Count
+printfn "INFO: %d TBL crops exceed PNG bounds across %d available referenced images (header checks, not full decodes)"
+    outOfBoundsCrops imageSizes.Count
 
 if args.Length = 2 then
     // These examples belong to the supplied top-level Chinese client archive set.
@@ -132,6 +162,8 @@ if args.Length = 2 then
         let html = text page
         check (page.IsSuccessStatusCode && html.Contains marker) $"Preview failed: {path} ({page.StatusCode})"
         if path.EndsWith("TRAP2.TBL") then
+            check (html.Contains("Frame number") && html.Contains("Center offset") &&
+                   html.Contains("Image missing from loaded archives")) "TBL field labels or missing-image message absent"
             let crops = Regex.Matches(html, "data:image/png;base64,([^\"]+)")
             // TRAP040.PNG is one of the known missing references in this sample set.
             check (crops.Count = 1) "Expected one available trap sprite"

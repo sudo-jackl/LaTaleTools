@@ -12,10 +12,15 @@
         <Compile Include="Config.fs" />
         <Compile Include="Views.fs" />
         <Compile Include="FileViews\LdtView.fs" />
+        <Compile Include="FileViews\TblExplanation.fs" />
         <Compile Include="FileViews\TblView.fs" />
         <Compile Include="FileViews\AudioView.fs" />
         <Compile Include="Handlers.fs" />
         <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="FileViews\TblExplanation.html" LogicalName="LaTaleTools.WebApp.FileViews.TblExplanation.html" />
     </ItemGroup>
 
     <ItemGroup>

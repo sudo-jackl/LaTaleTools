@@ -1,0 +1,120 @@
+<details id="tbl-coordinate-guide">
+  <summary>How sprite coordinates work</summary>
+  <style>
+    #tbl-coordinate-guide {
+      --tbl-ink: #243044;
+      --tbl-border: #9ca3af;
+      --tbl-surface: #f5f6f8;
+      --tbl-crop: #126f88;
+      --tbl-crop-fill: #d7eef3;
+      --tbl-offset: #246b37;
+      --tbl-center: #8b3aa2;
+      max-width: 56rem;
+      margin: 1rem 0;
+      padding: 0.75rem;
+      color: var(--tbl-ink);
+      background: white;
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    #tbl-coordinate-guide > summary { cursor: pointer; font-weight: 600; }
+    #tbl-coordinate-guide .tbl-panels {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+      gap: 1rem 2rem;
+    }
+    #tbl-coordinate-guide h3 { margin: 0.5rem 0; font-size: 1rem; }
+    #tbl-coordinate-guide svg { display: block; width: 100%; max-width: 25rem; height: auto; }
+    #tbl-coordinate-guide svg text { fill: var(--tbl-ink); font: 14px system-ui, sans-serif; }
+    #tbl-coordinate-guide .tbl-region { fill: var(--tbl-surface); stroke: var(--tbl-border); }
+    #tbl-coordinate-guide .tbl-crop { fill: var(--tbl-crop-fill); stroke: var(--tbl-crop); stroke-width: 1.5; }
+    #tbl-coordinate-guide .tbl-point { fill: var(--tbl-ink); }
+    #tbl-coordinate-guide .tbl-offset { stroke: var(--tbl-offset); stroke-width: 2.5; }
+    #tbl-coordinate-guide .tbl-center { stroke: var(--tbl-center); stroke-width: 2.5; stroke-dasharray: 5 4; }
+    #tbl-coordinate-guide .tbl-values { display: grid; gap: 0.25rem; font-variant-numeric: tabular-nums; }
+    #tbl-coordinate-guide .tbl-key { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 1rem 0; }
+    #tbl-coordinate-guide .tbl-swatch {
+      display: inline-block;
+      width: 1.5rem;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+      border-top: 2px solid var(--tbl-offset);
+    }
+    #tbl-coordinate-guide .tbl-swatch-center { border-color: var(--tbl-center); border-top-style: dashed; }
+  </style>
+  <p>A frame is one sprite image or part of a pose. An atlas packs several frames into one PNG.
+    This example follows the same 40 × 60 pixel crop from the atlas into its original frame.</p>
+  <div class="tbl-panels">
+    <section aria-labelledby="tbl-atlas-heading">
+      <h3 id="tbl-atlas-heading">1. Crop from the atlas</h3>
+      <svg viewBox="0 0 320 285" role="img" aria-labelledby="tbl-atlas-title tbl-atlas-desc">
+        <title id="tbl-atlas-title">Select the sprite's pixels</title>
+        <desc id="tbl-atlas-desc">The highlighted rectangle starts at atlas coordinates 60,20
+          and ends at 100,80. Its width is 40 and its height is 60 pixels.</desc>
+        <rect class="tbl-region" x="30" y="38" width="240" height="200" />
+        <rect class="tbl-region" x="44" y="52" width="74" height="64" />
+        <rect class="tbl-region" x="44" y="134" width="74" height="84" />
+        <rect class="tbl-crop" x="150" y="78" width="80" height="120" />
+        <circle class="tbl-point" cx="150" cy="78" r="3.5" />
+        <circle class="tbl-point" cx="230" cy="198" r="3.5" />
+        <text x="30" y="25">PNG atlas</text>
+        <text x="150" y="66" text-anchor="middle">(60, 20)</text>
+        <text x="190" y="143" text-anchor="middle">Sprite</text>
+        <text x="230" y="222" text-anchor="middle">(100, 80)</text>
+      </svg>
+      <div class="tbl-values">
+        <span><code>PosTopLeft</code>: (60, 20)</span>
+        <span><code>PosBottomRight</code>: (100, 80)</span>
+        <span>Crop size: 40 × 60 pixels</span>
+      </div>
+    </section>
+    <section aria-labelledby="tbl-frame-heading">
+      <h3 id="tbl-frame-heading">2. Place in the original frame</h3>
+      <svg viewBox="0 0 320 285" role="img" aria-labelledby="tbl-frame-title tbl-frame-desc">
+        <title id="tbl-frame-title">Place the crop and locate its rotation pivot</title>
+        <desc id="tbl-frame-desc">The original frame is 100 by 100 pixels. The crop starts at 20,30.
+          A solid arrow runs from the frame's origin to the crop's top-left: Offset is 20,30.
+          A dashed arrow runs from the center, 50,50, to the same top-left: CenterOffset is minus 30,minus 20.
+          The cross marks the rotation pivot, which is 30,20 relative to the crop's own top-left.</desc>
+        <defs>
+          <marker id="tbl-offset-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--tbl-offset)" />
+          </marker>
+          <marker id="tbl-center-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--tbl-center)" />
+          </marker>
+        </defs>
+        <rect class="tbl-region" x="30" y="38" width="200" height="200" />
+        <rect class="tbl-crop" x="70" y="98" width="80" height="120" />
+        <line class="tbl-offset" x1="30" y1="38" x2="70" y2="98" marker-end="url(#tbl-offset-arrow)" />
+        <line class="tbl-center" x1="130" y1="138" x2="70" y2="98" marker-end="url(#tbl-center-arrow)" />
+        <circle class="tbl-point" cx="30" cy="38" r="3.5" />
+        <circle class="tbl-point" cx="70" cy="98" r="3.5" />
+        <g stroke="var(--tbl-ink)">
+          <circle cx="130" cy="138" r="5.5" fill="white" stroke-width="2" />
+          <path d="M 121 138 H 139 M 130 129 V 147" />
+        </g>
+        <text x="30" y="25">Origin (0, 0)</text>
+        <text x="80" y="86">Crop (20, 30)</text>
+        <text x="160" y="148">Pivot</text>
+        <text x="160" y="168">(50, 50)</text>
+        <text x="110" y="192" text-anchor="middle">Sprite</text>
+        <text x="130" y="264" text-anchor="middle">Original frame: 100 × 100</text>
+      </svg>
+      <div class="tbl-values">
+        <span><code>Offset</code>: (20, 30)</span>
+        <span><code>CenterOffset</code>: (−30, −20)</span>
+        <span>Pivot within crop: (30, 20)</span>
+      </div>
+    </section>
+  </div>
+  <div class="tbl-key">
+    <span><span class="tbl-swatch" aria-hidden="true"></span>Frame origin → crop</span>
+    <span><span class="tbl-swatch tbl-swatch-center" aria-hidden="true"></span>Frame center → crop</span>
+    <span>X → right; Y ↓ down</span>
+  </div>
+  <p><code>Offset</code> places the crop relative to the original frame's top-left.
+    <code>CenterOffset</code> places it relative to that frame's center; negate it to find the
+    rotation pivot within the crop. Negative offsets are valid. These example values illustrate
+    the fields; they are not taken from the currently opened TBL.</p>
+</details>
