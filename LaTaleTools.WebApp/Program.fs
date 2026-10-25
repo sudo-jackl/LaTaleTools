@@ -37,7 +37,7 @@ let main args =
             )
     |> ignore
 
-    let app = builder.Build()
+    use app = builder.Build()
     app.UseGiraffe webApp
 
     let const' x _ = x

@@ -22,10 +22,12 @@
         <Compile Include="UtilTests.fs" />
         <Compile Include="TblTests.fs" />
         <Compile Include="VirtualFsTests.fs" />
+        <Compile Include="ResourceLifetimeTests.fs" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\LaTaleTools.Library\LaTaleTools.Library.fsproj" />
+      <ProjectReference Include="..\LaTaleTools.WebApp\LaTaleTools.WebApp.fsproj" />
     </ItemGroup>
 
 </Project>

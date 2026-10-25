@@ -37,7 +37,9 @@ let streamingHtmlView (node: XmlNode): HttpHandler =
             return Some ctx
          }
 
-let genericFileHandler streamOrView handler: HttpHandler =
+let genericFileHandler<'Resource when 'Resource :> IDisposable>
+    (streamOrView: string -> AppState -> 'Resource option)
+    (handler: string -> 'Resource -> HttpHandler): HttpHandler =
     fun next ctx ->
         let path = normalisePath ctx.Request.Path.Value
         let appState = ctx.GetService<AppState>()
@@ -48,7 +50,12 @@ let genericFileHandler streamOrView handler: HttpHandler =
         | Some (FsNode (name, _)) ->
             match streamOrView path appState with
             | None -> RequestErrors.notFound (text $"Could not find source file for file: {path}") next ctx
-            | Some streamOrView -> handler name streamOrView next ctx
+            | Some resource ->
+                task {
+                    // Handlers may consume the resource while building the view or awaiting its writer.
+                    use _ = resource :> IDisposable
+                    return! handler name resource next ctx
+                }
 
 let renderTblHandler (fullPath: string) (name: string) (path: string): HttpHandler =
     let viewAction _name view: HttpHandler =
@@ -68,11 +75,12 @@ let renderTblHandler (fullPath: string) (name: string) (path: string): HttpHandl
                         fun (ArchivePath ap as file) ->
                             monad' {
                                 let! stream = openStreamInArchive ap appState
-                                let buffer = Array.zeroCreate(int(stream.Length))
                                 let readTask =
                                     task {
+                                        use stream: Stream = stream
                                         use _ = actionLogger $"ReadingInArchiveFile[{ap}]"
-                                        let! _ = stream.ReadAsync(Memory(buffer))
+                                        let buffer = Array.zeroCreate(int(stream.Length))
+                                        do! stream.ReadExactlyAsync(Memory(buffer), ctx.RequestAborted)
                                         return buffer
                                     }
                                 return (file, readTask)

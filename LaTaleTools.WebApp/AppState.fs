@@ -1,5 +1,6 @@
 module LaTaleTools.WebApp.AppState
 
+open System
 open System.IO
 open System.IO.MemoryMappedFiles
 open FSharpPlus
@@ -16,6 +17,11 @@ type public AppState =
     { VirtualFs: VirtualFsState
       SpfViews: Map<SourceFile, SpfHandle>
     }
+
+    interface IDisposable with
+        member this.Dispose() =
+            for KeyValue (_, handle) in this.SpfViews do
+                handle.MemoryMappedFile.Dispose()
 
 type public InArchiveFileHandle =
     { SpfHandle: SpfHandle
@@ -68,6 +74,39 @@ let listSpfFiles (dirPath: string) =
     |> List.filter _.ToLower().EndsWith("spf")
 
 
+let internal buildAppStateFromFiles (logger: ILogger) openArchive spfFiles: AppState =
+    let actionLogger = Logging.prepareActionLogger logger
+
+    let readMetadataLogged path view =
+        use _ = actionLogger $"ReadingSpf[{path}]"
+        readMetadata view
+
+    // Retain ownership until the complete state (including the virtual filesystem) is built.
+    let spfHandles = ResizeArray<SpfHandle>()
+    try
+        for path in spfFiles do
+            spfHandles.Add(openArchive path)
+
+        let inArchiveFiles =
+            spfHandles
+            |> Seq.collect (fun spf ->
+                use view = spf.MemoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read)
+                let metadata = readMetadataLogged spf.PhysicalPath view
+                metadata |> List.map (fun m -> FileEntry (SourceFile spf.PhysicalPath, m)))
+            |> List.ofSeq
+
+        let spfViews =
+            spfHandles
+            |> Seq.map (fun handle -> (SourceFile handle.PhysicalPath, handle))
+            |> Map.ofSeq
+
+        { VirtualFs = buildFromFileEntries inArchiveFiles
+          SpfViews = spfViews }
+    with _ ->
+        for handle in spfHandles do
+            handle.MemoryMappedFile.Dispose()
+        reraise ()
+
 let public buildAppState (logger: ILogger) (dirOrFilePath: string): AppState =
     let spfFiles =
         if File.Exists dirOrFilePath then
@@ -77,27 +116,4 @@ let public buildAppState (logger: ILogger) (dirOrFilePath: string): AppState =
         else
             invalidArg (nameof dirOrFilePath) $"Invalid path: %s{dirOrFilePath}"
 
-    let actionLogger = Logging.prepareActionLogger logger
-    
-    let readMetadataLogged path view =
-        use _ = actionLogger $"ReadingSpf[{path}]"
-        readMetadata view
-
-    let spfHandles =
-        spfFiles |> List.map openSpf
-
-    let inArchiveFiles =
-        spfHandles
-        |> Seq.collect (fun spf -> (readMetadataLogged spf.PhysicalPath
-                                    <| spf.MemoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
-                                   |> Seq.map (fun m -> FileEntry (SourceFile spf.PhysicalPath, m))
-                       )
-        |> List.ofSeq
-
-    let spfViews =
-        spfHandles
-        |> List.map (fun handle -> (SourceFile handle.PhysicalPath, handle))
-        |> Map.ofList
-
-    { VirtualFs = buildFromFileEntries inArchiveFiles
-      SpfViews = spfViews}
+    buildAppStateFromFiles logger openSpf spfFiles
