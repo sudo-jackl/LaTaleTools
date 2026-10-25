@@ -33,7 +33,7 @@ let streamingHtmlView (node: XmlNode): HttpHandler =
          ctx.SetContentType "text/html; charset=utf-8"
          let pipeWriter = ctx.Response.BodyWriter
          task {
-            do! AsyncViewWriter.writeHtmlAsync pipeWriter node
+            do! AsyncViewWriter.writeHtmlAsyncWithCancellation pipeWriter ctx.RequestAborted node
             return Some ctx
          }
 

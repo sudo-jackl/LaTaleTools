@@ -23,6 +23,7 @@
         <Compile Include="TblTests.fs" />
         <Compile Include="VirtualFsTests.fs" />
         <Compile Include="ResourceLifetimeTests.fs" />
+        <Compile Include="StreamingHtmlTests.fs" />
     </ItemGroup>
 
     <ItemGroup>
