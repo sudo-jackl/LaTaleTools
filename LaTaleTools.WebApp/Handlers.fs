@@ -20,6 +20,8 @@ open LaTaleTools.WebApp.Route
 open LaTaleTools.WebApp.Views
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Primitives
+open Microsoft.Net.Http.Headers
 open TagLib
 
 let normalisePath (path: string) =
@@ -160,7 +162,9 @@ let virtualFsHandler: HttpHandler =
 
 let fileDownloadHandler: HttpHandler =
     let streamAction name stream =
+        let disposition = ContentDispositionHeaderValue(StringSegment("attachment"))
+        disposition.SetHttpFileName(StringSegment(name))
         setHttpHeader "Content-Type" "application/octet-stream"
-        >=> setHttpHeader "Content-Disposition" $"attachment; filename=\"{name}\""
+        >=> setHttpHeader "Content-Disposition" (disposition.ToString())
         >=> streamData false stream None None
     genericFileHandler openStreamInArchive streamAction

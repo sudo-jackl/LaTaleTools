@@ -1,7 +1,9 @@
 LaTale Tools
 ---
 
-Minimum DotNet version: 9.0
+Requires the .NET 10 SDK (all projects target `net10.0`).
+
+The app targets Windows, macOS, and Linux. SkiaSharp supplies Windows/macOS native libraries transitively; the explicit Linux native-assets package adds Linux support without replacing them.
 
 This project provides utilities for extracting various file formats for the MMORPG LaTale.
 
@@ -10,10 +12,32 @@ Currently supported file formats:
 * LDT: list file (items, achievements etc; typed)
 * TBL: general descriptor of the game's sprites
 
-The project also provides a web server for quickly previewing the game's content, and can be run by simply:
-1. Initiate a dotnet user secret with a single key `LaTaleBinaryPath` (absolute path to the directory holding the game's SPF files)
-2. Then, run
+The project also provides a web server for previewing the game's content. From this repository's directory, run:
+
+```sh
+dotnet build LaTaleTools.sln
+LaTaleBinaryPath="$PWD/../binary" dotnet run --project LaTaleTools.WebApp --launch-profile http
 ```
-$ dotnet run --project LaTaleTools.WebApp
+
+In Windows PowerShell, set the environment variable before running:
+
+```powershell
+$env:LaTaleBinaryPath = (Resolve-Path ../binary).Path
+dotnet run --project LaTaleTools.WebApp --launch-profile http
 ```
-3. Navigate to http://localhost:5126
+
+Open http://localhost:5126. Set `LaTaleBinaryPath` to your SPF directory (or configure the same key with .NET user secrets). Only that directory's immediate SPF files are loaded.
+
+On Arch/CachyOS, the SDK also needs `aspnet-targeting-pack` installed. The web app includes Linux native SkiaSharp assets for sprite previews.
+
+For automated checks, from this repository's directory:
+
+```sh
+dotnet test LaTaleTools.sln
+# Build Debug first; runs the compiled library against local SPF samples.
+dotnet fsi scripts/SmokeTest.fsx ../binary
+# Also check previews/downloads against a running viewer using the same samples.
+dotnet fsi scripts/SmokeTest.fsx ../binary http://localhost:5126
+```
+
+The smoke test reads samples without extracting or modifying them. HTTP checks use representative files from the supplied Chinese client set. Failures exit nonzero; missing TBL image references are reported separately because some are already missing in the samples. No game assets are needed for the unit tests.

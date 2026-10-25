@@ -26,6 +26,8 @@
     <ItemGroup>
       <PackageReference Include="Giraffe" Version="8.3.0" />
       <PackageReference Include="TagLibSharp" Version="2.3.0" />
+      <!-- SkiaSharp already supplies Windows/macOS assets; add Linux assets for runtime-based selection. -->
+      <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.151.0" />
     </ItemGroup>
 
 </Project>
